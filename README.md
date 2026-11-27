@@ -153,3 +153,11 @@ npm run test:ui -- --browser chrome
 Na interface `cy:open`, selecione uma spec. Não é necessário executar cadastro/login antes de outro teste. Falhas geram saída diferente de zero e screenshots em `cypress/screenshots`. O Electron incluído permite execução inicial sem navegador adicional, mas está depreciado pelo Cypress; Chrome é uma alternativa. Se um terminal de automação herdar `ELECTRON_RUN_AS_NODE`, remova a variável somente desse terminal antes de executar: `Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue`.
 
 Consulte [estratégia](docs/estrategia-de-testes.md), [matriz de cobertura](docs/matriz-de-cobertura.md) e [resultados reais](docs/resultados-dos-testes.md). Resultados brutos da última execução ficam em `cypress/results/latest.json` e durações HTTP em `cypress/results/timings.jsonl`; esses arquivos locais são substituídos a cada execução.
+
+## Integração contínua — GitHub Actions
+
+O workflow [Testes de API e UI](.github/workflows/cypress.yml) executa em pushes, pull requests e acionamento manual (`workflow_dispatch`). API e UI rodam em jobs independentes, com Ubuntu 24.04, Node.js 24 e Chrome headless. Cada job instala as dependências pelo lockfile, verifica o Cypress e prepara o binário MongoDB antes de executar `test:api` ou `test:ui`. A configuração Cypress inicia a API e o Vite automaticamente, com banco temporário e reset por teste.
+
+Os jobs preservam `cypress/results/` e screenshots disponíveis como artefatos separados por camada, por 14 dias, inclusive quando há falha. Não são necessários secrets ou Cypress Cloud. Uma falha de API não cancela a UI e vice-versa; testes reprovados mantêm o status de falha do job.
+
+Após publicar o workflow no GitHub, acompanhe **Actions → Testes de API e UI**. O botão **Run workflow** fica disponível quando o arquivo está na branch padrão. A regressão conhecida `UI-LOG-007` permanece ativa: consulte o [relatório histórico](docs/resultados-dos-testes.md). Os resultados locais anteriores não comprovam aprovação em Chrome/Linux; consulte os artefatos de cada execução de CI.

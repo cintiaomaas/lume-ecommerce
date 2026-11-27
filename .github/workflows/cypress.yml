@@ -1,0 +1,73 @@
+name: Testes de API e UI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cypress-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  cypress:
+    name: Cypress ${{ matrix.suite }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      # A falha de uma camada não cancela a coleta de resultados da outra.
+      fail-fast: false
+      matrix:
+        suite: [api, ui]
+    env:
+      CYPRESS_BASE_URL: http://127.0.0.1:5173
+      CYPRESS_API_URL: http://127.0.0.1:3000
+      MONGOMS_DOWNLOAD_DIR: ${{ github.workspace }}/.cache/mongodb-binaries
+
+    steps:
+      - name: Obter código
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Instalar e verificar Cypress
+        run: |
+          npx cypress install
+          npx cypress verify
+
+      # Baixa o MongoDB antes do timeout de inicialização do ambiente Cypress.
+      # O replica set temporário é encerrado; cada suíte cria sua própria massa.
+      - name: Preparar binário MongoDB
+        run: |
+          node --input-type=module <<'NODE'
+          import { MongoMemoryReplSet } from 'mongodb-memory-server';
+          const db = await MongoMemoryReplSet.create({ replSet: { count: 1, storageEngine: 'wiredTiger' } });
+          await db.stop();
+          NODE
+
+      # A configuração Cypress inicia e encerra API/Vite; não iniciar npm run dev.
+      - name: Executar testes de ${{ matrix.suite }}
+        run: xvfb-run -a npm run test:${{ matrix.suite }} -- --browser chrome
+
+      - name: Preservar resultados e screenshots
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: cypress-${{ matrix.suite }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            cypress/results/
+            cypress/screenshots/
+          if-no-files-found: warn
+          retention-days: 14
