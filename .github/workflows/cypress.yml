@@ -62,6 +62,7 @@ jobs:
         run: xvfb-run -a npm run test:${{ matrix.suite }} -- --browser chrome
 
       - name: Preservar resultados e screenshots
+        id: resultados
         if: always()
         uses: actions/upload-artifact@v6
         with:
@@ -71,3 +72,20 @@ jobs:
             cypress/screenshots/
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Publicar link do relatório no resumo
+        if: always()
+        env:
+          SUITE: ${{ matrix.suite }}
+          ARTIFACT_URL: ${{ steps.resultados.outputs.artifact-url }}
+        run: |
+          {
+            echo "### Relatório Mochawesome — ${SUITE}"
+            if [ -f cypress/results/mochawesome/index.html ] && [ -n "$ARTIFACT_URL" ]; then
+              echo "[Baixar relatório e evidências](${ARTIFACT_URL})"
+              echo ""
+              echo 'Extraia o ZIP e abra `results/mochawesome/index.html` no navegador.'
+            else
+              echo "Relatório indisponível. Consulte os logs e os artefatos disponíveis deste job."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

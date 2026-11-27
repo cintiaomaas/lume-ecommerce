@@ -156,6 +156,16 @@ Consulte [estratégia](docs/estrategia-de-testes.md), [matriz de cobertura](docs
 
 ## Integração contínua — GitHub Actions
 
+### Relatórios Mochawesome
+
+Os comandos `npm run test:api`, `npm run test:ui` e `npm run test:all` geram o relatório em `cypress/results/mochawesome/index.html`, com gráficos e screenshots das falhas incorporados ao HTML. Abra esse arquivo no navegador após a execução. O JSON consolidado também é preservado nessa pasta. Cada execução substitui o relatório local anterior; esses arquivos não são versionados.
+
+No GitHub, acesse **Actions → Testes de API e UI → execução desejada**. O resumo de cada job contém o link **Baixar relatório e evidências**. Também é possível baixar o artefato `cypress-api-...` ou `cypress-ui-...` na seção **Artifacts** da execução. Extraia o ZIP e abra `results/mochawesome/index.html` no navegador. O HTML é disponibilizado para download, sem publicação em GitHub Pages.
+
+Os relatórios são enviados mesmo quando testes falham, desde que a execução tenha chegado à geração do relatório. Falhas anteriores à inicialização dos testes podem deixar apenas os logs disponíveis. A retenção dos artefatos é de 14 dias, e testes reprovados continuam reprovando o job.
+
+Integração baseada nos [hooks oficiais do cypress-mochawesome-reporter](https://github.com/LironEr/cypress-mochawesome-reporter#setup), preservando o encerramento da API e do Vite após a geração do relatório.
+
 O workflow [Testes de API e UI](.github/workflows/cypress.yml) executa em pushes, pull requests e acionamento manual (`workflow_dispatch`). API e UI rodam em jobs independentes, com Ubuntu 24.04, Node.js 24 e Chrome headless. Cada job instala as dependências pelo lockfile, verifica o Cypress e prepara o binário MongoDB antes de executar `test:api` ou `test:ui`. A configuração Cypress inicia a API e o Vite automaticamente, com banco temporário e reset por teste.
 
 Os jobs preservam `cypress/results/` e screenshots disponíveis como artefatos separados por camada, por 14 dias, inclusive quando há falha. Não são necessários secrets ou Cypress Cloud. Uma falha de API não cancela a UI e vice-versa; testes reprovados mantêm o status de falha do job.

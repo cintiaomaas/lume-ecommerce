@@ -3,6 +3,7 @@ import { createServer } from "vite";
 import { createServer as tcpServer } from "node:net";
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { beforeRunHook, afterRunHook } from "cypress-mochawesome-reporter/lib/index.js";
 
 export async function startEnvironment(on, config) {
   const api = new URL(config.env.apiUrl);
@@ -66,8 +67,15 @@ export async function startEnvironment(on, config) {
       }));
     },
   });
+  on("before:run", async (details) => {
+    await beforeRunHook(details);
+  });
   on("after:run", async (results) => {
-    writeFileSync("cypress/results/latest.json", JSON.stringify(results, null, 2));
-    await stop();
+    try {
+      writeFileSync("cypress/results/latest.json", JSON.stringify(results, null, 2));
+      await afterRunHook();
+    } finally {
+      await stop();
+    }
   });
 }
