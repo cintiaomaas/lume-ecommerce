@@ -3,3 +3,7 @@ dist/
 .env
 *.log
 .cache/
+
+cypress/screenshots/
+cypress/videos/
+cypress/results/
