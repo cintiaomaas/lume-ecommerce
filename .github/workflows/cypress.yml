@@ -73,19 +73,82 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Publicar link do relatório no resumo
+      - name: Informar publicação do relatório
         if: always()
-        env:
-          SUITE: ${{ matrix.suite }}
-          ARTIFACT_URL: ${{ steps.resultados.outputs.artifact-url }}
         run: |
-          {
-            echo "### Relatório Mochawesome — ${SUITE}"
-            if [ -f cypress/results/mochawesome/index.html ] && [ -n "$ARTIFACT_URL" ]; then
-              echo "[Baixar relatório e evidências](${ARTIFACT_URL})"
-              echo ""
-              echo 'Extraia o ZIP e abra `results/mochawesome/index.html` no navegador.'
+          echo 'Na branch padrão, o job **Publicar relatórios no navegador** disponibiliza o link após o término das duas suítes. Pull requests e outras branches preservam apenas os artefatos.' >> "$GITHUB_STEP_SUMMARY"
+
+  reports:
+    name: Publicar relatórios no navegador
+    needs: cypress
+    if: >-
+      ${{ !cancelled() && github.event_name != 'pull_request' &&
+          github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Reunir resultados de API e UI
+        uses: actions/download-artifact@v5
+        with:
+          pattern: cypress-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports-input
+
+      - name: Preparar página dos relatórios
+        env:
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          mkdir -p public
+          touch public/.nojekyll
+          cat > public/index.html <<'HTML'
+          <!doctype html>
+          <html lang="pt-BR">
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Lume — Relatórios de testes</title>
+          <style>body{font:18px system-ui;max-width:800px;margin:60px auto;padding:24px;line-height:1.6}a{color:#2455ad}li{margin:16px 0}</style>
+          <h1>Relatórios de testes — Lume</h1>
+          <p>Última execução publicada da branch padrão. Selecione uma suíte para abrir o Mochawesome.</p>
+          HTML
+          echo "<p>Execução ${RUN_ID}, tentativa ${RUN_ATTEMPT}.</p><ul>" >> public/index.html
+          for suite in api ui; do
+            report="reports-input/cypress-${suite}-${RUN_ID}-${RUN_ATTEMPT}/results/mochawesome/index.html"
+            if [ -f "$report" ]; then
+              mkdir -p "public/${suite}"
+              cp "$report" "public/${suite}/index.html"
+              echo "<li><a href=\"${suite}/\">Abrir relatório de ${suite^^}</a></li>" >> public/index.html
             else
-              echo "Relatório indisponível. Consulte os logs e os artefatos disponíveis deste job."
+              echo "<li>Relatório de ${suite^^} indisponível nesta execução. Consulte os logs do Actions.</li>" >> public/index.html
             fi
-          } >> "$GITHUB_STEP_SUMMARY"
+          done
+          echo '</ul></html>' >> public/index.html
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Preparar publicação
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Exibir link para abrir no navegador
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          echo "### Relatórios Mochawesome" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Abrir relatórios no navegador](${PAGE_URL})" >> "$GITHUB_STEP_SUMMARY"
+          echo 'O endereço mostra a última execução publicada da branch padrão.' >> "$GITHUB_STEP_SUMMARY"
