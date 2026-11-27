@@ -7,6 +7,16 @@ export default defineConfig({
   video: false,
   screenshotOnRunFailure: true,
   retries: 0,
+  reporter: "cypress-mochawesome-reporter",
+  reporterOptions: {
+    reportDir: "cypress/results/mochawesome",
+    reportFilename: "index",
+    reportPageTitle: "Lume - Resultados dos testes",
+    charts: true,
+    embeddedScreenshots: true,
+    inlineAssets: true,
+    saveJson: true,
+  },
   env: {
     apiUrl: process.env.CYPRESS_API_URL || "http://127.0.0.1:3000",
     healthMs: 500, productsMs: 1000, loginMs: 2000,
