@@ -14,7 +14,7 @@ import YAML from "yaml";
 import { z } from "zod";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const secret = process.env.JWT_SECRET || randomBytes(48).toString("hex");
+let secret = process.env.JWT_SECRET || randomBytes(48).toString("hex");
 const db = await MongoMemoryReplSet.create({
   replSet: { count: 1, storageEngine: "wiredTiger" },
 });
@@ -324,3 +324,12 @@ async function stop() {
 }
 process.on("SIGINT", stop);
 process.on("SIGTERM", stop);
+
+// Somente processos de teste criados com fork recebem o canal IPC.
+if (process.env.NODE_ENV === "test" && process.send) {
+  const { installTestControl } = await import("./test-control.js");
+  await installTestControl({ User, Product, Order, authLimiter,
+    rotateSecret: () => { secret = randomBytes(48).toString("hex"); },
+    expiredToken: (id) => jwt.sign({}, secret, { subject: id, expiresIn: -1 }),
+  });
+}

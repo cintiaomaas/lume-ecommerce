@@ -41,7 +41,7 @@ Verificação de tipos (não é automação de testes):
 npm run check
 ```
 
-Não foram criados testes automatizados, conforme o escopo solicitado.
+As suítes automatizadas de UI e API usam Cypress. Consulte a seção abaixo para execução.
 
 ## Banco de dados em memória
 
@@ -118,3 +118,38 @@ O servidor escuta somente em `127.0.0.1`. Este projeto é destinado a execução
 - Confira o site em largura de celular e percorra os formulários com o teclado.
 
 Esses passos são um roteiro manual, não uma suíte automatizada.
+
+## Automação Cypress
+
+Requisitos: Node 22.12+ em uma versão principal suportada pelo Cypress (22, 24 ou >=26), npm e o binário Cypress 16.3.0. Instale com `npm ci`. Se o npm bloquear o postinstall do Cypress, execute `npx cypress install`. Na primeira execução, MongoDB também pode precisar baixar seu binário. No PowerShell com scripts bloqueados, use `npm.cmd` e `npx.cmd`.
+
+```bash
+npm run cy:open
+npm run test:api
+npm run test:ui
+npm run test:all
+npm run check
+```
+
+Os comandos de testes iniciam automaticamente uma API de testes e o Vite e aguardam a API ficar disponível. **Encerre `npm run dev`/`npm start` antes de executar a suíte**, pois as portas precisam estar livres. Não inicie outra aplicação junto dos testes. Cada teste restaura a massa, inclusive rate limiting, estoque e saldo VIP. Não use dados reais.
+
+Por padrão: UI `http://127.0.0.1:5173`, API `http://127.0.0.1:3000`. Exemplo PowerShell para outras portas locais:
+
+```powershell
+$env:CYPRESS_BASE_URL = 'http://127.0.0.1:5174'
+$env:CYPRESS_API_URL = 'http://127.0.0.1:3001'
+npm.cmd run test:all
+```
+
+A suíte recusa hosts externos. O proxy Vite acompanha a porta da API. Para ajustar apenas referências locais de tempo, use, por exemplo, `npm run test:api -- --env loginMs=2500,checkoutMs=4000`; registre a justificativa do ajuste. Os valores não são SLAs.
+
+Para executar uma spec individual ou escolher navegador instalado:
+
+```bash
+npm run test:all -- --spec cypress/e2e/api/checkout.cy.js
+npm run test:ui -- --browser chrome
+```
+
+Na interface `cy:open`, selecione uma spec. Não é necessário executar cadastro/login antes de outro teste. Falhas geram saída diferente de zero e screenshots em `cypress/screenshots`. O Electron incluído permite execução inicial sem navegador adicional, mas está depreciado pelo Cypress; Chrome é uma alternativa. Se um terminal de automação herdar `ELECTRON_RUN_AS_NODE`, remova a variável somente desse terminal antes de executar: `Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue`.
+
+Consulte [estratégia](docs/estrategia-de-testes.md), [matriz de cobertura](docs/matriz-de-cobertura.md) e [resultados reais](docs/resultados-dos-testes.md). Resultados brutos da última execução ficam em `cypress/results/latest.json` e durações HTTP em `cypress/results/timings.jsonl`; esses arquivos locais são substituídos a cada execução.

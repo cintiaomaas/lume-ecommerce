@@ -192,21 +192,21 @@ function App() {
       <div className="totals">
         <div>
           <span>Subtotal</span>
-          <span>{money(cart.subtotal)}</span>
+          <span data-cy="cart-subtotal">{money(cart.subtotal)}</span>
         </div>
         {payment === "cash" && (
           <div className="discount">
             <span>Desconto em dinheiro · 10%</span>
-            <span>− {money(cart.discount)}</span>
+            <span data-cy="cart-discount">− {money(cart.discount)}</span>
           </div>
         )}
         <div>
           <span>Frete{user?.vip ? " VIP" : ""}</span>
-          <span>{cart.shipping ? money(cart.shipping) : "Grátis"}</span>
+          <span data-cy="cart-shipping">{cart.shipping ? money(cart.shipping) : "Grátis"}</span>
         </div>
         <div className="grand-total">
           <span>Total</span>
-          <strong>{money(cart.total)}</strong>
+          <strong data-cy="cart-total">{money(cart.total)}</strong>
         </div>
       </div>
     );
@@ -229,7 +229,7 @@ function App() {
         <div className="header-actions">
           {user ? (
             <>
-              <button
+              <button data-cy="logout"
                 onClick={() => {
                   setToken("");
                   setUser(null);
@@ -239,17 +239,17 @@ function App() {
               >
                 Sair
               </button>
-              <span className="user-name">
+              <span data-cy="user-name" className="user-name">
                 Olá, {user.name.split(" ")[0]} {user.vip && "✧ VIP"}
               </span>
             </>
           ) : (
-            <button onClick={() => open("login")}>
+            <button data-cy="open-login" onClick={() => open("login")}>
               Entrar <span aria-hidden="true">♙</span>
             </button>
           )}
           <button
-            className="bag-button"
+            data-cy="open-cart" className="bag-button"
             onClick={() => open(user ? "cart" : "login")}
           >
             Sacola <span>{cart.items.reduce((n, i) => n + i.quantity, 0)}</span>
@@ -341,7 +341,7 @@ function App() {
           ) : (
             <div className="product-grid">
               {products.map((p) => (
-                <article className="product-card" key={p._id}>
+                <article data-cy={`product-${p.kind}`} className="product-card" key={p._id}>
                   <div className={`product-art ${p.kind}`}>
                     <span className="product-tag">
                       {p.stock
@@ -363,7 +363,7 @@ function App() {
                   <p>{p.description}</p>
                   <div className="product-bottom">
                     <strong>{money(p.price)}</strong>
-                    <button disabled={!p.stock || busy} onClick={() => add(p)}>
+                    <button data-cy="add-product" disabled={!p.stock || busy} onClick={() => add(p)}>
                       {p.stock ? "Adicionar +" : "Indisponível"}
                     </button>
                   </div>
@@ -372,7 +372,7 @@ function App() {
             </div>
           )}
         </section>
-        <section id="clube" className="club">
+        <section data-cy="club" id="clube" className="club">
           <div className="club-symbol">✳</div>
           <div>
             <span className="eyebrow">CLUBE LUME</span>
@@ -423,7 +423,7 @@ function App() {
       >
         <div className="modal-inner">
           <button
-            className="close"
+            data-cy="close-modal" className="close"
             aria-label="Fechar"
             disabled={busy}
             onClick={() => open(null)}
@@ -462,7 +462,7 @@ function App() {
                   <label>
                     Nome
                     <input
-                      name="name"
+                      data-cy={`${panel}-name`} name="name"
                       required
                       minLength={2}
                       maxLength={80}
@@ -473,7 +473,7 @@ function App() {
                 <label>
                   E-mail
                   <input
-                    name="email"
+                    data-cy={`${panel}-email`} name="email"
                     type="email"
                     required
                     autoComplete="email"
@@ -483,7 +483,7 @@ function App() {
                 <label>
                   Senha
                   <input
-                    name="password"
+                    data-cy={`${panel}-password`} name="password"
                     type="password"
                     required
                     minLength={8}
@@ -494,7 +494,7 @@ function App() {
                   />
                 </label>
                 <small>Mínimo de 8 caracteres.</small>
-                <button className="primary" disabled={busy}>
+                <button data-cy="auth-submit" className="primary" disabled={busy}>
                   {busy
                     ? "Aguarde…"
                     : panel === "login"
@@ -505,7 +505,7 @@ function App() {
               <button
                 className="text-button"
                 disabled={busy}
-                onClick={() => open(panel === "login" ? "register" : "login")}
+                data-cy="switch-auth" onClick={() => open(panel === "login" ? "register" : "login")}
               >
                 {panel === "login"
                   ? "Ainda não tenho conta"
@@ -521,7 +521,7 @@ function App() {
                 <>
                   <div className="cart-items">
                     {cart.items.map((i) => (
-                      <div className="cart-item" key={i.productId}>
+                      <div data-cy={`cart-${i.kind}`} className="cart-item" key={i.productId}>
                         <div className={`mini-art ${i.kind}`}>
                           <Bottle kind={i.kind} />
                         </div>
@@ -531,21 +531,21 @@ function App() {
                           <div className="quantity">
                             <button
                               disabled={busy}
-                              aria-label={`Diminuir ${i.name}`}
+                              data-cy="decrease" aria-label={`Diminuir ${i.name}`}
                               onClick={() =>
                                 quantity(i.productId, i.quantity - 1)
                               }
                             >
                               −
                             </button>
-                            <span>{i.quantity}</span>
+                            <span data-cy="quantity">{i.quantity}</span>
                             <button
                               disabled={
                                 busy ||
                                 i.quantity >= i.stock ||
                                 i.quantity >= 99
                               }
-                              aria-label={`Aumentar ${i.name}`}
+                              data-cy="increase" aria-label={`Aumentar ${i.name}`}
                               onClick={() =>
                                 quantity(i.productId, i.quantity + 1)
                               }
@@ -553,7 +553,7 @@ function App() {
                               +
                             </button>
                             <button
-                              className="remove"
+                              data-cy="remove" className="remove"
                               disabled={busy}
                               onClick={() => quantity(i.productId, 0)}
                             >
@@ -568,7 +568,7 @@ function App() {
                   <button
                     className="primary"
                     disabled={busy}
-                    onClick={() => open("checkout")}
+                    data-cy="open-checkout" onClick={() => open("checkout")}
                   >
                     Continuar para finalizar
                   </button>
@@ -577,7 +577,7 @@ function App() {
                   </p>
                 </>
               ) : (
-                <div className="empty-state">
+                <div data-cy="empty-cart" className="empty-state">
                   <span>♡</span>
                   <p>Sua sacola está esperando um cuidado especial.</p>
                   <button className="primary" onClick={() => open(null)}>
@@ -627,7 +627,7 @@ function App() {
                   <label>
                     Nome de quem recebe
                     <input
-                      name="recipient"
+                      data-cy="address-recipient" name="recipient"
                       required
                       minLength={2}
                       maxLength={80}
@@ -638,7 +638,7 @@ function App() {
                   <label>
                     Rua, número e complemento
                     <input
-                      name="street"
+                      data-cy="address-street" name="street"
                       required
                       minLength={3}
                       maxLength={160}
@@ -649,7 +649,7 @@ function App() {
                     <label>
                       Cidade
                       <input
-                        name="city"
+                        data-cy="address-city" name="city"
                         required
                         minLength={2}
                         maxLength={80}
@@ -659,7 +659,7 @@ function App() {
                     <label>
                       UF
                       <input
-                        name="state"
+                        data-cy="address-state" name="state"
                         required
                         pattern="[A-Z]{2}"
                         maxLength={2}
@@ -674,7 +674,7 @@ function App() {
                     <label>
                       CEP
                       <input
-                        name="zip"
+                        data-cy="address-zip" name="zip"
                         required
                         pattern="[0-9]{5}-?[0-9]{3}"
                         placeholder="00000-000"
@@ -688,7 +688,7 @@ function App() {
                   <div className="payment-options">
                     <button
                       type="button"
-                      className={payment === "card" ? "selected" : ""}
+                      data-cy="payment-card" className={payment === "card" ? "selected" : ""}
                       aria-pressed={payment === "card"}
                       onClick={() => {
                         setPayment("card");
@@ -699,7 +699,7 @@ function App() {
                     </button>
                     <button
                       type="button"
-                      className={payment === "cash" ? "selected" : ""}
+                      data-cy="payment-cash" className={payment === "cash" ? "selected" : ""}
                       aria-pressed={payment === "cash"}
                       onClick={() => {
                         setPayment("cash");
@@ -717,7 +717,7 @@ function App() {
                 </p>
                 <button
                   className="primary"
-                  disabled={busy || !cart.items.length}
+                  data-cy="checkout-submit" disabled={busy || !cart.items.length}
                 >
                   {busy ? "Finalizando…" : "Confirmar compra"}
                 </button>
@@ -725,7 +725,7 @@ function App() {
             </>
           )}
           {panel === "success" && order && (
-            <div className="success">
+            <div data-cy="success" className="success">
               <span className="success-icon">✓</span>
               <span className="eyebrow">UM MOMENTO SÓ SEU</span>
               <h2>Pedido confirmado!</h2>
